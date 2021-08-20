@@ -1,4 +1,5 @@
 FROM centos:7
+ARG src_file
 RUN yum update -y && \
     yum install -y \
       python-virtualenv \
@@ -9,6 +10,6 @@ RUN yum update -y && \
     virtualenv -p /usr/bin/python3 /buildvenv &&\
     source /buildvenv/bin/activate &&\
     pip install --upgrade pip &&\
-    pip install -r /getjwtsrc/requirements.txt &&\
+    pip install -r /builderdir/requirements.txt &&\
     pip install pyinstaller &&\
-    pyinstaller --onefile /getjwtsrc/getjwt.py --distpath /getjwtsrc/dist
+    pyinstaller --onefile /builderdir/${src_file} --distpath /builderdir/dist
