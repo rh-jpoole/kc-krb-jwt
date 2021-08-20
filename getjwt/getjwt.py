@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import json,boto3,requests,urllib,re,base64,pprint,datetime,os,argparse
+import requests,urllib,re,argparse
 from requests_kerberos import HTTPKerberosAuth, OPTIONAL
 from lxml import html
 from getpass import getpass
