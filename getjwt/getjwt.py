@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import requests,urllib,re,argparse
+import requests,urllib,re,argparse,sys
 from requests_kerberos import HTTPKerberosAuth, OPTIONAL
 from lxml import html
 from getpass import getpass
@@ -15,7 +15,7 @@ def get_token(client,client_secret,redirect,base_url,auth_uri,token_uri,method,v
         print("Something went wrong with auth")
         print(e)
         session.close()
-        exit()
+        sys.exit(1)
       try:
         matches = re.search('&code=(.*?)$', get_auth_response.headers['Location'])
         code = matches.group(1)
@@ -26,7 +26,7 @@ def get_token(client,client_secret,redirect,base_url,auth_uri,token_uri,method,v
         print("Something went wrong obtaining the JWT")
         print(e)
         session.close()
-        exit()
+        sys.exit(1)
       finally:
         session.close()
     if method == 'password':
@@ -40,7 +40,7 @@ def get_token(client,client_secret,redirect,base_url,auth_uri,token_uri,method,v
         print("Something went wrong obtaining the JWT")
         print(e)
         session.close()
-        exit()
+        sys.exit(1)
       finally:
         session.close()
 
