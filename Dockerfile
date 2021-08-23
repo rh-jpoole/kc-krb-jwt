@@ -1,5 +1,4 @@
 FROM centos:7
-ARG src_file
 RUN yum update -y && \
     yum install -y \
       python-virtualenv \
@@ -12,4 +11,4 @@ RUN yum update -y && \
     pip install --upgrade pip &&\
     pip install -r /builderdir/requirements.txt &&\
     pip install pyinstaller &&\
-    pyinstaller --onefile /builderdir/${src_file} --distpath /builderdir/dist
+    /builderdir/install.sh
