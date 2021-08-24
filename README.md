@@ -3,8 +3,7 @@
 Script to obtain JWT token using Kerberos or username+password to authenticate against KeyCloak. If password method specified and the additional options aren't defined you will be prompted for username and password.
 
 ```
-usage: getcreds.py [-h] -c CLIENT -s CLIENT_SECRET -e RGW_ENDPOINT -b BASE_URL [-a AUTH_URI] [-t TOKEN_URI] [-o {id_token,access_token,refresh_token,all}] [-m {kerberos,password}] [-u USER] [-p PASSWORD] [-k VERIFY_SSL] [-r ROLE_ARN]
-                   [-d DURATION]
+usage: getcreds.py [-h] -c CLIENT -s CLIENT_SECRET -e RGW_ENDPOINT -b BASE_URL [-a AUTH_URI] [-t TOKEN_URI] [-m {kerberos,password}] [-u USER] [-p PASSWORD] [-k VERIFY_SSL] [-r ROLE_ARN] [-d DURATION]
 
 Obtain JWT using Kerberos or Password Auth from KeyCloak server and optionally exchange for temporary S3 credentials for RADOS gateway.
 
@@ -22,8 +21,6 @@ optional arguments:
                         RH-SSO auth endpoint (default '/auth')
   -t TOKEN_URI, --token-uri TOKEN_URI
                         RH-SSO token endpoint (default '/token')
-  -o {id_token,access_token,refresh_token,all}, --output {id_token,access_token,refresh_token,all}
-                        Specify which token to output from id_token, access_token, refresh_token or all. Default is id_token.
   -m {kerberos,password}, --method {kerberos,password}
                         Authentication method, either kerberos or password (default 'kerberos')
   -u USER, --user USER  Username, for use with 'password' method.

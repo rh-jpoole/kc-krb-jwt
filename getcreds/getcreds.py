@@ -36,8 +36,8 @@ def get_token(client,client_secret,redirect,base_url,auth_uri,token_uri,method,v
         password = getpass()
       token_params = {'grant_type': 'password', 'client_id': client, 'client_secret': client_secret, 'redirect_uri': redirect, 'username': user, 'password': password, 'scope': 'openid'}
       try:
-        jwt_response = session.post(base_url + token_uri, token_params, allow_redirects=False, verify=verify_ssl)
-        return jwt_response.text
+        token_response = session.post(base_url + token_uri, token_params, allow_redirects=False, verify=verify_ssl)
+        return token_response.text
       except Exception as e:
         print("Something went wrong obtaining the JWT")
         print(e)
@@ -54,7 +54,6 @@ def main():
   parser.add_argument('-b','--base-url', help="RH-SSO URL", required=True)
   parser.add_argument('-a','--auth-uri', help="RH-SSO auth endpoint (default '/auth')", default='/auth')
   parser.add_argument('-t','--token-uri', help="RH-SSO token endpoint (default '/token')", default='/token')
-  parser.add_argument('-o','--output', choices=['id_token','access_token','refresh_token','all'], help="Specify which token to output from id_token, access_token, refresh_token or all. Default is id_token.", default='id_token')
   parser.add_argument('-m','--method', choices=['kerberos','password'], help="Authentication method, either kerberos or password (default 'kerberos')", default='kerberos')
   parser.add_argument('-u','--user', help="Username, for use with 'password' method.")
   parser.add_argument('-p','--password', help="Password, for use with 'password' method.")
@@ -63,13 +62,10 @@ def main():
   parser.add_argument('-d','--duration', help="Seconds creds are valid for. Default is 3600 (1h), maximum is 43200 (12h) - note this is configurable in Ceph so restrictions may differ.", default=3600)
   args = parser.parse_args()
   token = get_token(args.client,args.client_secret,args.rgw_endpoint,args.base_url,args.auth_uri,args.token_uri,args.method,args.verify_ssl,args.user,args.password)
-  if args.role_arn is None:
-    if args.output == "all":
-      print(token)
-    else:
-      parsed_token = json.loads(token)
-      print(parsed_token[args.output])
-  else:
+  parsed_token = json.loads(token)
+  for output in ['id_token','access_token','refresh_token']:
+    print("export KC_" + output.upper() +"=" + parsed_token[output])
+  if args.role_arn is not None:
     role_session_name = os.getenv('USER')
     parsed_token = json.loads(token)
     sts_client = boto3.client(
