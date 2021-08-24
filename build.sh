@@ -1,4 +1,4 @@
 #!/bin/bash
-#export SRC_DIR=$(pwd)/gets3creds
-podman build -v ${SRC_DIR}:/builderdir:z . --no-cache -t packagebuilder:dev
-podman rmi localhost/packagebuilder:dev
+SRC_DIR=$(pwd)/getcreds
+podman build -v ${SRC_DIR}:/builderdir:z . --no-cache -t getcredsbuilder:dev
+podman rmi localhost/getcredsbuilder:dev

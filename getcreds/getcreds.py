@@ -47,23 +47,28 @@ def get_token(client,client_secret,redirect,base_url,auth_uri,token_uri,method,v
         session.close()
 
 def main():
-  parser = argparse.ArgumentParser(description='Obtain JWT using Kerberos or Password Auth.')
+  parser = argparse.ArgumentParser(description='Obtain JWT using Kerberos or Password Auth from KeyCloak server and optionally exchange for temporary S3 credentials for RADOS gateway.')
   parser.add_argument('-c','--client', help="RH-SSO Client name", required=True)
   parser.add_argument('-s','--client-secret', help="RH-SSO Client secret", required=True)
-  parser.add_argument('-e','--ceph-endpoint', help="RH Ceph endpoint (redirect_url)", required=True)
+  parser.add_argument('-e','--rgw-endpoint', help="Ceph RGW endpoint (redirect_url)", required=True)
   parser.add_argument('-b','--base-url', help="RH-SSO URL", required=True)
-  parser.add_argument('-a','--auth-uri', help="RH-SSO auth endpoint", default='/auth')
-  parser.add_argument('-t','--token-uri', help="RH-SSO token endpoint", default='/token')
-  parser.add_argument('-m','--method', choices=['kerberos','password'], help="Authentication method, either kerberos or password", default='kerberos')
+  parser.add_argument('-a','--auth-uri', help="RH-SSO auth endpoint (default '/auth')", default='/auth')
+  parser.add_argument('-t','--token-uri', help="RH-SSO token endpoint (default '/token')", default='/token')
+  parser.add_argument('-o','--output', choices=['id_token','access_token','refresh_token','all'], help="Specify which token to output from id_token, access_token, refresh_token or all. Default is id_token.", default='id_token')
+  parser.add_argument('-m','--method', choices=['kerberos','password'], help="Authentication method, either kerberos or password (default 'kerberos')", default='kerberos')
   parser.add_argument('-u','--user', help="Username, for use with 'password' method.")
   parser.add_argument('-p','--password', help="Password, for use with 'password' method.")
-  parser.add_argument('-k','--verify-ssl', help="Verify SSL - can be either True/False/path to CA certificate", default=True)
+  parser.add_argument('-k','--verify-ssl', help="Verify SSL - can be either True/False/path to CA certificate (default 'True')", default=True)
   parser.add_argument('-r','--role-arn', help="Role arn to assume")
-  parser.add_argument('-d','--duration', help="Seconds creds are valid for. Default is 3600 (1h), maximum is 43200 (12h)", default=3600)
+  parser.add_argument('-d','--duration', help="Seconds creds are valid for. Default is 3600 (1h), maximum is 43200 (12h) - note this is configurable in Ceph so restrictions may differ.", default=3600)
   args = parser.parse_args()
-  token = get_token(args.client,args.client_secret,args.ceph_endpoint,args.base_url,args.auth_uri,args.token_uri,args.method,args.verify_ssl,args.user,args.password)
+  token = get_token(args.client,args.client_secret,args.rgw_endpoint,args.base_url,args.auth_uri,args.token_uri,args.method,args.verify_ssl,args.user,args.password)
   if args.role_arn is None:
-    print(token)
+    if args.output == "all":
+      print(token)
+    else:
+      parsed_token = json.loads(token)
+      print(parsed_token[args.output])
   else:
     role_session_name = os.getenv('USER')
     parsed_token = json.loads(token)
@@ -71,7 +76,7 @@ def main():
        'sts',
        aws_access_key_id="",
        aws_secret_access_key="",
-       endpoint_url=args.ceph_endpoint.strip("/"),
+       endpoint_url=args.rgw_endpoint.strip("/"),
        region_name='',
     )
 
