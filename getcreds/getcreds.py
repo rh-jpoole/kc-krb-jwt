@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import json,requests,urllib,re,argparse,sys,os,boto3
-from requests_kerberos import HTTPKerberosAuth, OPTIONAL
+from requests_gssapi import HTTPKerberosAuth, OPTIONAL
 from lxml import html
 from getpass import getpass
 
@@ -9,42 +9,24 @@ def get_token(client,client_secret,redirect,base_url,auth_uri,token_uri,method,v
     if method == 'kerberos':
       kerberos_auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL, force_preemptive=True)
       access_code_params = {'client_id': client, 'response_type': 'code', 'scope': 'openid', 'redirect_uri': redirect}
-      try:
-        get_auth_response = session.get(base_url + auth_uri + "?" + urllib.parse.urlencode(access_code_params), verify=verify_ssl, auth=kerberos_auth, allow_redirects=False)
-      except Exception as e:
-        print("Something went wrong with auth")
-        print(e)
-        session.close()
-        sys.exit(1)
-      try:
-        matches = re.search('&code=(.*?)$', get_auth_response.headers['Location'])
-        code = matches.group(1)
-        token_params = {'code': code, 'grant_type': 'authorization_code', 'client_id': client, 'client_secret': client_secret, 'redirect_uri': redirect}
-        token_response = session.post(base_url + token_uri, token_params, allow_redirects=False, verify=verify_ssl)
-        return token_response.text
-      except Exception as e:
-        print("Something went wrong obtaining the JWT")
-        print(e)
-        session.close()
-        sys.exit(1)
-      finally:
-        session.close()
+      get_auth_response = session.get(base_url + auth_uri, params=access_code_params , verify=verify_ssl, auth=kerberos_auth, allow_redirects=False)
+      matches = re.search('&code=(.*?)$', get_auth_response.headers['Location'])
+      code = matches.group(1)
+      token_params = {'code': code, 'grant_type': 'authorization_code', 'client_id': client, 'client_secret': client_secret, 'redirect_uri': redirect}
+      token_response = session.post(base_url + token_uri, token_params, allow_redirects=False, verify=verify_ssl)
+      session.close()
+      return token_response.text
+
     if method == 'password':
       if user is None:
         user = input('username: ')
       if password is None:
         password = getpass()
       token_params = {'grant_type': 'password', 'client_id': client, 'client_secret': client_secret, 'redirect_uri': redirect, 'username': user, 'password': password, 'scope': 'openid'}
-      try:
-        token_response = session.post(base_url + token_uri, token_params, allow_redirects=False, verify=verify_ssl)
-        return token_response.text
-      except Exception as e:
-        print("Something went wrong obtaining the JWT")
-        print(e)
-        session.close()
-        sys.exit(1)
-      finally:
-        session.close()
+      token_response = session.post(base_url + token_uri, token_params, allow_redirects=False, verify=verify_ssl)
+      session.close()
+      return token_response.text
+
 
 def main():
   parser = argparse.ArgumentParser(description='Obtain JWT using Kerberos or Password Auth from KeyCloak server and optionally exchange for temporary S3 credentials for RADOS gateway.')
@@ -75,7 +57,6 @@ def main():
        endpoint_url=args.rgw_endpoint.strip("/"),
        region_name='',
     )
-
     response = sts_client.assume_role_with_web_identity(
       RoleArn=args.role_arn,
       RoleSessionName=role_session_name,
