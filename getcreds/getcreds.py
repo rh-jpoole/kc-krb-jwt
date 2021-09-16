@@ -1,13 +1,17 @@
 #!/usr/bin/env python
-import json,requests,urllib,re,argparse,sys,os,boto3
-from requests_gssapi import HTTPKerberosAuth, OPTIONAL
+import json,requests,re,argparse,os,boto3,gssapi
+from requests_gssapi import HTTPSPNEGOAuth
 from lxml import html
 from getpass import getpass
 
 def get_token(client,client_secret,redirect,base_url,auth_uri,token_uri,method,verify_ssl,user,password):
     session = requests.session()
     if method == 'kerberos':
-      kerberos_auth = HTTPKerberosAuth(mutual_authentication=OPTIONAL, force_preemptive=True)
+      try:
+        spnego = gssapi.mechs.Mechanism.from_sasl_name("SPNEGO")
+      except AttributeError:
+        spnego = gssapi.OID.from_int_seq("1.3.6.1.5.5.2")
+      kerberos_auth = HTTPSPNEGOAuth(opportunistic_auth=True,mech=spnego)
       access_code_params = {'client_id': client, 'response_type': 'code', 'scope': 'openid', 'redirect_uri': redirect}
       get_auth_response = session.get(base_url + auth_uri, params=access_code_params , verify=verify_ssl, auth=kerberos_auth, allow_redirects=False)
       matches = re.search('&code=(.*?)$', get_auth_response.headers['Location'])
@@ -41,7 +45,7 @@ def main():
   parser.add_argument('-p','--password', help="Password, for use with 'password' method.")
   parser.add_argument('-k','--verify-ssl', help="Verify SSL - can be either True/False/path to CA certificate (default 'True')", default=True)
   parser.add_argument('-r','--role-arn', help="Role arn to assume")
-  parser.add_argument('-d','--duration', help="Seconds creds are valid for. Default is 3600 (1h), maximum is 43200 (12h) - note this is configurable in Ceph so restrictions may differ.", default=3600)
+  parser.add_argument('-d','--duration', help="Seconds credentials are valid for. Default is 3600 (1h), maximum is 43200 (12h) - note this is configurable in Ceph so restrictions may differ.", default=3600)
   args = parser.parse_args()
   token = get_token(args.client,args.client_secret,args.rgw_endpoint,args.base_url,args.auth_uri,args.token_uri,args.method,args.verify_ssl,args.user,args.password)
   parsed_token = json.loads(token)
